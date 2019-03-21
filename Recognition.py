@@ -17,16 +17,15 @@ def GetReport(array):
                 break
         if flag is False:
             timeListReport.append({'name': item['name'], 'time1': item['time'], 'time2': item['time']})
-#    print(timeListReport)
 
-faceCascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+faceCascade = cv2.CascadeClassifier('RecognitionFiles/haarcascade_frontalface_default.xml')
 
 cap = cv2.VideoCapture(0)
 cap.set(3, 640)
 cap.set(4, 480)
 
-sp = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
-facerec = dlib.face_recognition_model_v1('dlib_face_recognition_resnet_model_v1.dat')
+sp = dlib.shape_predictor('RecognitionFiles/shape_predictor_68_face_landmarks.dat')
+facerec = dlib.face_recognition_model_v1('RecognitionFiles/dlib_face_recognition_resnet_model_v1.dat')
 detector = dlib.get_frontal_face_detector()
 
 with open('data.json', 'r') as f:
@@ -46,7 +45,7 @@ while True:
     )
 
     for (x,y,w,h) in faces:
-        dets_webcam = detector(img2, 1)
+        dets_webcam = detector(img2, 1)                                         # Здесь начался HOG, нужно убрать
         for k, d in enumerate(dets_webcam):
             shape = sp(img2, d)
             face_descriptor2 = facerec.compute_face_descriptor(img2, shape)

@@ -17,7 +17,7 @@ def parse_1(name):
         print("--- %s seconds ---" % (time.time() - start_time))
         return answer.find('a', class_='text-default', text=re.compile(name)).get('href')
     else:
-        print('Site unavailable')
+        print('Сайт недоступен')
         return 0
 
 def parse_2(aud, URL):
@@ -29,24 +29,27 @@ def parse_2(aud, URL):
         print("--- %s seconds ---" % (time.time() - start_time))
         return answer.find('a', text=re.compile(aud)).get('href')
     else:
-        print('Corps not entered correctly')
+        print('Введенные корпус/аудитория некорректны')
         return 0
 
 def parse_3(URL):
     start_time = time.time()
     session = requests.Session()
-    request = session.get(URL, headers=headers)
-    if request.status_code == 200:
+    try:
+        request = session.get(URL, headers=headers)
         answer = bs(request.content, 'lxml')
         about = []
         for div in answer.find('td', class_='cell cur-day cur-cell').find_all('div'):
             print(div.text)
             about.append(div.text)
             print("--- %s seconds ---" % (time.time() - start_time))
+        if about == []:
+            print('В данный момент занятие не проводится')
+            return
         return about
-    else:
-        return 0
+    except BaseException as e:
+        print("Query error: {}".format(e))
 
 start_time = time.time()
-kek = parse_3(parse_2('141', parse_1('Учебный корпус № 19')))
+kek = parse_3(parse_2('108', parse_1('Учебный корпус № 10')))
 print("--- %s seconds ---" % (time.time() - start_time))

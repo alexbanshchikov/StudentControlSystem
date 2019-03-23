@@ -3,6 +3,7 @@ from tkinter import ttk
 from tkinter import filedialog as fd
 from sqlalchemy import create_engine
 from CalculateDescriptor import calculate
+from ScheduleParser import parse_lesson as pl
 
 
 class Main(tk.Frame):
@@ -11,7 +12,7 @@ class Main(tk.Frame):
         self.init_main()
 
     def init_main(self):
-        btn_start_work = ttk.Button(text='Начать работу', command=root.destroy)
+        btn_start_work = ttk.Button(text='Начать работу', command=self.open_lesson_information_form)
         btn_start_work.place(x=150, y=50)
 
         btn_add_student = ttk.Button(text='Добавить студента', command=self.open_add_student_form)
@@ -25,6 +26,9 @@ class Main(tk.Frame):
 
     def open_add_student_form(self):
         AddStudentForm()
+
+    def open_lesson_information_form(self):
+        LessonInformationForm()
 
 
 class AddGroupForm(tk.Toplevel):
@@ -124,7 +128,7 @@ class AddStudentForm(tk.Toplevel):
         self.add_student(student_name, student_group, student_photo_path)
 
     def add_student(self, student_name, student_group, student_photo_path):
-        connection_string = "postgresql+psycopg2://admin:password@localhost/student_control"  # Запилить получение дескриптора и сформировать запрос к бд
+        connection_string = "postgresql+psycopg2://admin:password@localhost/student_control"
 
         engine = create_engine(connection_string)
 
@@ -146,6 +150,46 @@ class AddStudentForm(tk.Toplevel):
 
         except BaseException as e:
             print("Query error: {}".format(e))
+
+
+class LessonInformationForm(tk.Toplevel):
+    def __init__(self):
+        super().__init__(root)
+        self.init_lesson_information_form()
+
+    def init_lesson_information_form(self):
+        self.title("Информация о занятии")
+        self.geometry("400x220+400+300")
+        self.resizable(False, False)
+
+        label_corps = tk.Label(self, text='Выберете корпус:')
+        label_corps.place(x=50, y=50)
+
+        self.combobox_corps = ttk.Combobox(self, values=[u'Учебный корпус № 10', u'Учебный корпус № 19'])  # Добавить заполнение вариантов из БД
+        self.combobox_corps.current(0)
+        self.combobox_corps.place(x=200, y=50)
+
+        label_auditory = tk.Label(self, text='Введите аудиторию:')
+        label_auditory.place(x=50, y=80)
+
+        self.entry_auditory = ttk.Entry(self)
+        self.entry_auditory.place(x=200, y=80)
+
+        btn_add_student = ttk.Button(text='Начать', command=self.get_lesson_information)
+        btn_add_student.place(x=150, y=120)
+
+    def get_lesson_information(self):
+        corps = str(self.combobox_corps.get())
+        auditory = str(self.entry_auditory.get())
+        lesson_data = pl(corps, auditory)
+
+    def get_students_from_groups(self):
+        connection_string = "postgresql+psycopg2://admin:password@localhost/student_control"
+
+        engine = create_engine(connection_string)
+
+        '''get_group_query = "SELECT id FROM studygroup WHERE name = '{0}'".format(student_group)
+        data = engine.execute(get_group_query)'''
 
 
 if __name__ == "__main__":

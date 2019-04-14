@@ -1,4 +1,3 @@
-import time
 import requests
 from bs4 import BeautifulSoup as bs
 import re
@@ -45,5 +44,5 @@ def parse_3(URL):
         print("Query error: {}".format(e))
 
 def parse_lesson(corps, auditory):
-    result = parse_3(parse_2('108', parse_1('Учебный корпус № 10')))    # Допилить парсер
-    return ('Инстр.средства ИС (ЛК)', ('8И5А', '1263'), 'Цапко И. В.')
+    # result = parse_3(parse_2('108', parse_1('Учебный корпус № 10')))    # Допилить парсер
+    return ('Инстр.средства ИС (ЛК)', ('8И5А',), 'Цапко И. В.')

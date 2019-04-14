@@ -4,6 +4,7 @@ from tkinter import filedialog as fd
 from sqlalchemy import create_engine
 from CalculateDescriptor import calculate
 from ScheduleParser import parse_lesson as pl
+import json
 
 
 class Main(tk.Frame):
@@ -21,6 +22,9 @@ class Main(tk.Frame):
         btn_add_group = ttk.Button(text='Добавить группу', command=self.open_add_group_form )
         btn_add_group.place(x=150, y=110)
 
+        '''btn_show_group = ttk.Button(text='Просмотреть группы', command=self.open_show_group_form)
+        btn_show_group.place(x=150, y=140)'''
+
     def open_add_group_form(self):
         AddGroupForm()
 
@@ -30,6 +34,50 @@ class Main(tk.Frame):
     def open_lesson_information_form(self):
         LessonInformationForm()
 
+    '''def open_show_group_form(self):
+        ShowGroupForm()'''
+
+
+'''class ShowGroupForm(tk.Toplevel):
+    def __init__(self):
+        super().__init__(root)
+        self.init_show_group_form()
+
+    def init_show_group_form(self):
+        self.title("Показать группу")
+        self.geometry("400x220+400+300")
+        self.resizable(False, False)
+
+        label_description = tk.Label(self, text='Название группы:')
+        label_description.place(x=50, y=50)
+
+        self.combobox_groups = ttk.Combobox(self, values=[u'8И5А', u'1263'])  # Добавить заполнение вариантов из БД
+        self.combobox_groups.current(0)
+        self.combobox_groups.place(x=200, y=50)
+
+        self.tree = ttk.Treeview(self, columns=("ID", "Name"), height=10, show="headings")
+
+        self.tree.column("ID", width=55, anchor=tk.E)
+        self.tree.column("Name", width=150, anchor=tk.E)
+
+        self.tree.heading("ID", text="Номер")
+        self.tree.heading("Name", text="Фамилия Имя")
+
+        scrollbar = ttk.Scrollbar(self, orient='vertical', command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+
+        self.tree.place(x=30, y=50)
+
+        self.tree.pack()
+
+        btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
+        btn_cancel.place(x=300, y=170)
+
+        btn_ok = ttk.Button(self, text='Показать', command=lambda: self.show_group())  # Скобки
+        btn_ok.place(x=220, y=170)
+
+        self.grab_set()
+        self.focus_set()'''
 
 class AddGroupForm(tk.Toplevel):
     def __init__(self):
@@ -175,21 +223,45 @@ class LessonInformationForm(tk.Toplevel):
         self.entry_auditory = ttk.Entry(self)
         self.entry_auditory.place(x=200, y=80)
 
-        btn_add_student = ttk.Button(text='Начать', command=self.get_lesson_information)
-        btn_add_student.place(x=150, y=120)
+        self.btn_start_recognition = ttk.Button(self, text='Начать', command=self.get_lesson_information)
+        self.btn_start_recognition.place(x=150, y=120)
+
+        self.grab_set()
+        self.focus_set()
 
     def get_lesson_information(self):
         corps = str(self.combobox_corps.get())
         auditory = str(self.entry_auditory.get())
         lesson_data = pl(corps, auditory)
+        self.get_students_from_groups(lesson_data)
 
-    def get_students_from_groups(self):
+    def get_students_from_groups(self, lesson_data):
         connection_string = "postgresql+psycopg2://admin:password@localhost/student_control"
 
         engine = create_engine(connection_string)
 
-        '''get_group_query = "SELECT id FROM studygroup WHERE name = '{0}'".format(student_group)
-        data = engine.execute(get_group_query)'''
+        get_students_query = "SELECT s.name, s.descriptor FROM student s " \
+                             "JOIN studygroup sg ON s.groupid = sg.id " \
+                             "WHERE sg.name = '{0}'".format(lesson_data[1][0])
+
+        if len(lesson_data[1]) > 1:
+            for group in lesson_data[1]:
+                get_students_query += " OR sg.name = '{0}'".format(group)
+
+        students_data = engine.execute(get_students_query)
+
+        students_data_list = []
+
+        for student in students_data:
+            students_data_list.append({'Name': student[0], 'Descriptor': student[1]})
+        with open('student_data.json', 'w') as f:
+            student_data = json.dumps(students_data_list, ensure_ascii=False)
+            student_data = student_data.replace("\\\\", "\\")
+            f.write(student_data)
+
+            root.destroy()
+
+            exec(open('/home/banshchikovalex/GitHub/StudentControlSystem/Recognition.py').read())
 
 
 if __name__ == "__main__":

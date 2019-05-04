@@ -44,5 +44,6 @@ def parse_3(URL):
         print("Query error: {}".format(e))
 
 def parse_lesson(corps, auditory):
-    # result = parse_3(parse_2('108', parse_1('Учебный корпус № 10')))    # Допилить парсер
-    return ('Инстр.средства ИС (ЛК)', ('8И5А',), 'Цапко И. В.')
+    #result = parse_3(parse_2('206', parse_1('Учебный корпус № 10')))
+    #return tuple(result)
+    return ('Инстр.средства ИС (ЛК)', '8В72', 'Цапко И. В.')

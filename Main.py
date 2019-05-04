@@ -1,11 +1,25 @@
-import tkinter as tk
-from tkinter import ttk
+import multiprocessing
 from tkinter import filedialog as fd
 from sqlalchemy import create_engine
 from CalculateDescriptor import calculate
 from ScheduleParser import parse_lesson as pl
-import json
+from TreadingRecognition import *
 
+connection_string = "postgresql+psycopg2://admin:password@localhost/student_control"
+
+
+def init_groups_list():
+    result = []
+
+    engine = create_engine(connection_string)
+
+    get_group_query = "SELECT name FROM studygroup"
+    data = engine.execute(get_group_query)
+
+    for item in data:
+        result.append(str(item[0]))
+
+    return result
 
 class Main(tk.Frame):
     def __init__(self, root):
@@ -22,8 +36,8 @@ class Main(tk.Frame):
         btn_add_group = ttk.Button(text='Добавить группу', command=self.open_add_group_form )
         btn_add_group.place(x=150, y=110)
 
-        '''btn_show_group = ttk.Button(text='Просмотреть группы', command=self.open_show_group_form)
-        btn_show_group.place(x=150, y=140)'''
+        btn_show_group = ttk.Button(text='Просмотреть группы', command=self.open_show_group_form)
+        btn_show_group.place(x=150, y=140)
 
     def open_add_group_form(self):
         AddGroupForm()
@@ -34,26 +48,33 @@ class Main(tk.Frame):
     def open_lesson_information_form(self):
         LessonInformationForm()
 
-    '''def open_show_group_form(self):
-        ShowGroupForm()'''
+    def open_show_group_form(self):
+        ShowGroupForm()
 
 
-'''class ShowGroupForm(tk.Toplevel):
+class ShowGroupForm(tk.Toplevel):
     def __init__(self):
         super().__init__(root)
-        self.init_show_group_form()
+        groups_list = init_groups_list()
+        self.init_show_group_form(groups_list)
 
-    def init_show_group_form(self):
+    def init_show_group_form(self, groups_list):
         self.title("Показать группу")
         self.geometry("400x220+400+300")
         self.resizable(False, False)
 
-        label_description = tk.Label(self, text='Название группы:')
-        label_description.place(x=50, y=50)
+        toolbar = tk.Frame(self, bg='#d7d8e0', bd=2)
+        toolbar.pack(side=tk.TOP, fill=tk.X)
 
-        self.combobox_groups = ttk.Combobox(self, values=[u'8И5А', u'1263'])  # Добавить заполнение вариантов из БД
+        button_bar = tk.Frame(self, bg='#d7d8e0', bd=2)
+        button_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        self.label_name = tk.Label(toolbar, text='Выберите группу:')
+        self.label_name.pack(side=tk.LEFT)
+
+        self.combobox_groups = ttk.Combobox(toolbar, values=groups_list)  # Добавить заполнение вариантов из БД
         self.combobox_groups.current(0)
-        self.combobox_groups.place(x=200, y=50)
+        self.combobox_groups.pack(side=tk.RIGHT)
 
         self.tree = ttk.Treeview(self, columns=("ID", "Name"), height=10, show="headings")
 
@@ -70,14 +91,14 @@ class Main(tk.Frame):
 
         self.tree.pack()
 
-        btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
-        btn_cancel.place(x=300, y=170)
+        btn_cancel = ttk.Button(button_bar, text='Закрыть', command=self.destroy)
+        btn_cancel.pack(side=tk.RIGHT)
 
-        btn_ok = ttk.Button(self, text='Показать', command=lambda: self.show_group())  # Скобки
-        btn_ok.place(x=220, y=170)
+        btn_ok = ttk.Button(button_bar, text='Показать', command=lambda: self.show_group())  # Скобки
+        btn_ok.pack(side=tk.RIGHT)
 
         self.grab_set()
-        self.focus_set()'''
+        self.focus_set()
 
 class AddGroupForm(tk.Toplevel):
     def __init__(self):
@@ -109,8 +130,6 @@ class AddGroupForm(tk.Toplevel):
         self.add_group(group_name)
 
     def add_group(self, group_name):
-        connection_string = "postgresql+psycopg2://admin:password@localhost/student_control"
-
         engine = create_engine(connection_string)
 
         query = "INSERT INTO studygroup (name) VALUES ('{0}')".format(group_name)
@@ -125,9 +144,10 @@ class AddGroupForm(tk.Toplevel):
 class AddStudentForm(tk.Toplevel):
     def __init__(self):
         super().__init__(root)
-        self.init_add_student_form()
+        groups_list = init_groups_list()
+        self.init_add_student_form(groups_list)
 
-    def init_add_student_form(self):
+    def init_add_student_form(self, groups_list):
         self.title("Добавить студента")
         self.geometry("400x300+400+300")
         self.resizable(False, False)
@@ -141,7 +161,7 @@ class AddStudentForm(tk.Toplevel):
         self.label_group = tk.Label(self, text='Группа:')
         self.label_group.place(x=50, y=80)
 
-        self.combobox_group = ttk.Combobox(self, values=[u'8И5А', u'1263'])  # Добавить заполнение вариантов из БД
+        self.combobox_group = ttk.Combobox(self, values=groups_list)
         self.combobox_group.current(0)
         self.combobox_group.place(x=200, y=80)
 
@@ -176,8 +196,6 @@ class AddStudentForm(tk.Toplevel):
         self.add_student(student_name, student_group, student_photo_path)
 
     def add_student(self, student_name, student_group, student_photo_path):
-        connection_string = "postgresql+psycopg2://admin:password@localhost/student_control"
-
         engine = create_engine(connection_string)
 
         descriptor = calculate(student_photo_path)
@@ -236,17 +254,21 @@ class LessonInformationForm(tk.Toplevel):
         self.get_students_from_groups(lesson_data)
 
     def get_students_from_groups(self, lesson_data):
-        connection_string = "postgresql+psycopg2://admin:password@localhost/student_control"
-
         engine = create_engine(connection_string)
 
-        get_students_query = "SELECT s.name, s.descriptor FROM student s " \
-                             "JOIN studygroup sg ON s.groupid = sg.id " \
-                             "WHERE sg.name = '{0}'".format(lesson_data[1][0])
+        if type(lesson_data[1]) is str:
+            get_students_query = "SELECT s.name, s.descriptor FROM student s " \
+                                 "JOIN studygroup sg ON s.groupid = sg.id " \
+                                 "WHERE sg.name = '{0}'".format(lesson_data[1])
 
-        if len(lesson_data[1]) > 1:
-            for group in lesson_data[1]:
-                get_students_query += " OR sg.name = '{0}'".format(group)
+        else:
+            get_students_query = "SELECT s.name, s.descriptor FROM student s " \
+                                 "JOIN studygroup sg ON s.groupid = sg.id " \
+                                 "WHERE sg.name = '{0}'".format(lesson_data[1][0])
+
+            if len(lesson_data[1]) > 1:
+                for group in lesson_data[1]:
+                    get_students_query += " OR sg.name = '{0}'".format(group)
 
         students_data = engine.execute(get_students_query)
 
@@ -261,11 +283,16 @@ class LessonInformationForm(tk.Toplevel):
 
             root.destroy()
 
-            exec(open('/home/banshchikovalex/GitHub/StudentControlSystem/Recognition.py').read())
+            q = multiprocessing.Queue()
+            q.cancel_join_thread()
+            gui = GuiApp(q, lesson_data)
+            t1 = multiprocessing.Process(target=Recognition, args=(q,))
+            t1.start()
+            gui.root.mainloop()
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = Tk()
     app = Main(root)
     app.pack()
     root.title("StudentControlSystem")

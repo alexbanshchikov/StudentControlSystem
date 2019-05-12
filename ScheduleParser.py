@@ -45,5 +45,8 @@ def parse_3(URL):
 
 def parse_lesson(corps, auditory):
     #result = parse_3(parse_2('206', parse_1('Учебный корпус № 10')))
+    #result.append(corps)
+    #result.append(auditory)
     #return tuple(result)
-    return ('Инстр.средства ИС (ЛК)', '8В72', 'Цапко И. В.')
+    #return ('Инстр.средства ИС (ЛК)', '8И5А', 'Цапко И. В.', 'Учебный корпус № 10', '206')
+    return ('Инстр.средства ИС (ЛК)', ('8И5А', '1263'), 'Цапко И. В.', 'Учебный корпус № 10', '206')

@@ -72,14 +72,14 @@ class ShowGroupForm(tk.Toplevel):
         self.label_name = tk.Label(toolbar, text='Выберите группу:')
         self.label_name.pack(side=tk.LEFT)
 
-        self.combobox_groups = ttk.Combobox(toolbar, values=groups_list)  # Добавить заполнение вариантов из БД
+        self.combobox_groups = ttk.Combobox(toolbar, values=groups_list)
         self.combobox_groups.current(0)
         self.combobox_groups.pack(side=tk.RIGHT)
 
         self.tree = ttk.Treeview(self, columns=("ID", "Name"), height=10, show="headings")
 
-        self.tree.column("ID", width=55, anchor=tk.E)
-        self.tree.column("Name", width=150, anchor=tk.E)
+        self.tree.column("ID", width=70, anchor=tk.E)
+        self.tree.column("Name", width=300, anchor=tk.E)
 
         self.tree.heading("ID", text="Номер")
         self.tree.heading("Name", text="Фамилия Имя")
@@ -94,11 +94,26 @@ class ShowGroupForm(tk.Toplevel):
         btn_cancel = ttk.Button(button_bar, text='Закрыть', command=self.destroy)
         btn_cancel.pack(side=tk.RIGHT)
 
-        btn_ok = ttk.Button(button_bar, text='Показать', command=lambda: self.show_group())  # Скобки
+        btn_ok = ttk.Button(button_bar, text='Показать', command=lambda: self.show_group(str(self.combobox_groups.get())))
         btn_ok.pack(side=tk.RIGHT)
 
         self.grab_set()
         self.focus_set()
+
+    def show_group(self, group):
+        engine = create_engine(connection_string)
+
+        get_group_query = "SELECT s.name, s.descriptor FROM student s " \
+                                 "JOIN studygroup sg ON s.groupid = sg.id " \
+                                 "WHERE sg.name = '{0}'".format(group)
+        data = engine.execute(get_group_query)
+
+        [self.tree.delete(i) for i in self.tree.get_children()]
+
+        i = 1
+        for item in data:
+            self.tree.insert('', 'end', values=(i, item[0]))
+            i = i + 1
 
 class AddGroupForm(tk.Toplevel):
     def __init__(self):
@@ -257,12 +272,12 @@ class LessonInformationForm(tk.Toplevel):
         engine = create_engine(connection_string)
 
         if type(lesson_data[1]) is str:
-            get_students_query = "SELECT s.name, s.descriptor FROM student s " \
+            get_students_query = "SELECT s.name, s.descriptor, sg.name FROM student s " \
                                  "JOIN studygroup sg ON s.groupid = sg.id " \
                                  "WHERE sg.name = '{0}'".format(lesson_data[1])
 
         else:
-            get_students_query = "SELECT s.name, s.descriptor FROM student s " \
+            get_students_query = "SELECT s.name, s.descriptor, sg.name FROM student s " \
                                  "JOIN studygroup sg ON s.groupid = sg.id " \
                                  "WHERE sg.name = '{0}'".format(lesson_data[1][0])
 
@@ -275,7 +290,7 @@ class LessonInformationForm(tk.Toplevel):
         students_data_list = []
 
         for student in students_data:
-            students_data_list.append({'Name': student[0], 'Descriptor': student[1]})
+            students_data_list.append({'Name': student[0], 'Descriptor': student[1], 'Group': student[2]})
         with open('student_data.json', 'w') as f:
             student_data = json.dumps(students_data_list, ensure_ascii=False)
             student_data = student_data.replace("\\\\", "\\")
@@ -286,7 +301,7 @@ class LessonInformationForm(tk.Toplevel):
             q = multiprocessing.Queue()
             q.cancel_join_thread()
             gui = GuiApp(q, lesson_data)
-            t1 = multiprocessing.Process(target=Recognition, args=(q,))
+            t1 = multiprocessing.Process(target=recognition, args=(q,))
             t1.start()
             gui.root.mainloop()
 

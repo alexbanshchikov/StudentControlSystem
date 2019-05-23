@@ -1,6 +1,5 @@
 import multiprocessing
 from tkinter import filedialog as fd
-from sqlalchemy import create_engine
 from CalculateDescriptor import calculate
 from ScheduleParser import parse_lesson as pl
 from TreadingRecognition import *
@@ -10,7 +9,6 @@ connection_string = "postgresql+psycopg2://admin:password@localhost/student_cont
 
 def init_groups_list():
     result = []
-
     engine = create_engine(connection_string)
 
     get_group_query = "SELECT name FROM studygroup"
@@ -21,23 +19,40 @@ def init_groups_list():
 
     return result
 
+def init_corps_list():
+    result = []
+
+    engine = create_engine(connection_string)
+
+    get_corps_query = "SELECT name FROM corps"
+    data = engine.execute(get_corps_query)
+
+    for item in data:
+        result.append(str(item[0]))
+
+    return result
+
+
 class Main(tk.Frame):
     def __init__(self, root):
         super().__init__(root)
         self.init_main()
 
     def init_main(self):
-        btn_start_work = ttk.Button(text='Начать работу', command=self.open_lesson_information_form)
-        btn_start_work.place(x=150, y=50)
+        btn_start_work = tk.Button(text='Начать работу', height="1", width="16", font="14", command=self.open_lesson_information_form)
+        btn_start_work.place(x=110, y=50)
 
-        btn_add_student = ttk.Button(text='Добавить студента', command=self.open_add_student_form)
-        btn_add_student.place(x=150, y=80)
+        btn_add_student = tk.Button(text='Добавить студента', height="1", width="16", font="14", command=self.open_add_student_form)
+        btn_add_student.place(x=110, y=90)
 
-        btn_add_group = ttk.Button(text='Добавить группу', command=self.open_add_group_form )
-        btn_add_group.place(x=150, y=110)
+        btn_add_group = tk.Button(text='Добавить группу', height="1", width="16", font="14", command=self.open_add_group_form)
+        btn_add_group.place(x=110, y=130)
 
-        btn_show_group = ttk.Button(text='Просмотреть группы', command=self.open_show_group_form)
-        btn_show_group.place(x=150, y=140)
+        btn_show_group = tk.Button(text='Просмотреть группы', height="1", width="16", font="14", command=self.open_show_group_form)
+        btn_show_group.place(x=110, y=170)
+
+        btn_report = tk.Button(text='Построить отчет', height="1", width="16", font="14", command=self.open_report_form)
+        btn_report.place(x=110, y=210)
 
     def open_add_group_form(self):
         AddGroupForm()
@@ -50,6 +65,104 @@ class Main(tk.Frame):
 
     def open_show_group_form(self):
         ShowGroupForm()
+
+    def open_report_form(self):
+        ReportForm()
+
+
+class ReportForm(tk.Toplevel):
+    def __init__(self):
+        super().__init__(root)
+        groups_list = init_groups_list()
+        self.init_report_form(groups_list)
+
+    def init_report_form(self, groups_list):
+        self.title("Отчет по посещаемости")
+        self.geometry("800x400+400+300")
+        self.resizable(False, False)
+
+        toolbar_date = tk.Frame(self, bg='#d7d8e0', bd=2)
+        toolbar_date.pack(side=tk.TOP, fill=tk.X)
+
+        toolbar_lesson = tk.Frame(self, bg='#d7d8e0', bd=2)
+        toolbar_lesson.pack(side=tk.TOP, fill=tk.X)
+
+        button_bar = tk.Frame(self, bg='#d7d8e0', bd=2)
+        button_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        self.label_date_to = tk.Label(toolbar_date, text='                Дата начала:')
+        self.label_date_to.pack(side=tk.LEFT)
+
+        self.entry_date_from = ttk.Entry(toolbar_date)
+        self.entry_date_from.pack(side=tk.LEFT)
+
+        self.entry_date_to = ttk.Entry(toolbar_date)
+        self.entry_date_to.pack(side=tk.RIGHT)
+
+        self.label_date_to = tk.Label(toolbar_date, text='Дата окончания:')
+        self.label_date_to.pack(side=tk.RIGHT)
+
+        self.label_lesson = tk.Label(toolbar_lesson, text='Название дисциплины:')
+        self.label_lesson.pack(side=tk.LEFT)
+
+        self.entry_lesson_name = ttk.Entry(toolbar_lesson)
+        self.entry_lesson_name.pack(side=tk.LEFT)
+
+        self.combobox_groups = ttk.Combobox(toolbar_lesson, values=groups_list)
+        self.combobox_groups.pack(side=tk.RIGHT)
+
+        self.label_group = tk.Label(toolbar_lesson, text='Номер группы:')
+        self.label_group.pack(side=tk.RIGHT)
+
+        self.tree = ttk.Treeview(self, columns=('date', 'lesson_name', 'student', 'time-in', 'time-out', 'duration'),
+                                 height=15, show='headings')
+
+        self.tree.column("date", width=100, anchor=tk.CENTER)
+        self.tree.column("lesson_name", width=170, anchor=tk.CENTER)
+        self.tree.column("student", width=170, anchor=tk.CENTER)
+        self.tree.column("time-in", width=130, anchor=tk.CENTER)
+        self.tree.column("time-out", width=100, anchor=tk.CENTER)
+        self.tree.column("duration", width=130, anchor=tk.CENTER)
+
+        self.tree.heading("date", text='Дата')
+        self.tree.heading("lesson_name", text='Дисциплина')
+        self.tree.heading("student", text='Студент')
+        self.tree.heading("time-in", text='Время прибытия')
+        self.tree.heading("time-out", text='Время ухода')
+        self.tree.heading("duration", text='Общее время')
+
+        self.tree.pack()
+
+        btn_cancel = ttk.Button(button_bar, text='Закрыть', command=self.destroy)
+        btn_cancel.pack(side=tk.RIGHT)
+
+        btn_ok = ttk.Button(button_bar, text='Показать',
+                            command=lambda: self.build_report(str(self.entry_lesson_name.get()),
+                                                              str(self.entry_date_from.get()),
+                                                              str(self.entry_date_to.get()),
+                                                              str(self.combobox_groups.get())))
+        btn_ok.pack(side=tk.RIGHT)
+
+        self.grab_set()
+        self.focus_set()
+
+    def build_report(self, lesson_name, date_from, date_to, group):
+        engine = create_engine(connection_string)
+
+        get_report_query = 'SELECT date, "lessonName", "studentName", "timeIn", "timeOut", ' \
+                            'ceil(extract(epoch from ("timeOut"::time - "timeIn"::time)) / 60) duration ' \
+                            'FROM "recognitionHistory" ' \
+                            """WHERE "lessonName" LIKE '{0}%%' """ \
+                            """AND "studyGroup" LIKE '{1}' """ \
+                            """AND (date, date) OVERLAPS ('{2}'::DATE, '{3}'::DATE) """ \
+                            'ORDER BY "studentName" ASC'.format(lesson_name, group, date_from, date_to)
+
+        data = engine.execute(get_report_query)
+
+        [self.tree.delete(i) for i in self.tree.get_children()]
+
+        for item in data:
+            self.tree.insert('', 'end', values=(item[0], item[1], item[2], item[3], item[4], int(item[5])))
 
 
 class ShowGroupForm(tk.Toplevel):
@@ -105,7 +218,8 @@ class ShowGroupForm(tk.Toplevel):
 
         get_group_query = "SELECT s.name, s.descriptor FROM student s " \
                                  "JOIN studygroup sg ON s.groupid = sg.id " \
-                                 "WHERE sg.name = '{0}'".format(group)
+                                 "WHERE sg.name = '{0}' " \
+                                 "ORDER BY s.name ASC".format(group)
         data = engine.execute(get_group_query)
 
         [self.tree.delete(i) for i in self.tree.get_children()]
@@ -122,20 +236,23 @@ class AddGroupForm(tk.Toplevel):
 
     def init_add_group_form(self):
         self.title("Добавить группу")
-        self.geometry("400x220+400+300")
+        self.geometry("400x150+400+300")
         self.resizable(False, False)
 
-        label_description = tk.Label(self, text='Название группы:')
+        button_bar = tk.Frame(self, bg='#d7d8e0', bd=2)
+        button_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        label_description = tk.Label(self, text='Номер группы:')
         label_description.place(x=50, y=50)
 
         self.entry_group_name = ttk.Entry(self)
         self.entry_group_name.place(x=200, y=50)
 
-        btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
-        btn_cancel.place(x=300, y=170)
+        btn_cancel = ttk.Button(button_bar, text='Закрыть', command=self.destroy)
+        btn_cancel.pack(side=tk.RIGHT)
 
-        btn_ok = ttk.Button(self, text='Добавить', command=lambda: self.get_arguments())
-        btn_ok.place(x=220, y=170)
+        btn_ok = ttk.Button(button_bar, text='Добавить', command=lambda: self.get_arguments())
+        btn_ok.pack(side=RIGHT)
 
         self.grab_set()
         self.focus_set()
@@ -164,8 +281,11 @@ class AddStudentForm(tk.Toplevel):
 
     def init_add_student_form(self, groups_list):
         self.title("Добавить студента")
-        self.geometry("400x300+400+300")
+        self.geometry("400x250+400+300")
         self.resizable(False, False)
+
+        button_bar = tk.Frame(self, bg='#d7d8e0', bd=2)
+        button_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.label_name = tk.Label(self, text='Фамилия и имя:')
         self.label_name.place(x=50, y=50)
@@ -189,11 +309,11 @@ class AddStudentForm(tk.Toplevel):
         self.label_photo_container = tk.Label(self, text='Здесь будет имя файла')
         self.label_photo_container.place(x=50, y=140)
 
-        self.btn_cancel = ttk.Button(self, text='Закрыть', command=self.destroy)
-        self.btn_cancel.place(x=300, y=170)
+        self.btn_cancel = ttk.Button(button_bar, text='Закрыть', command=self.destroy)
+        self.btn_cancel.pack(side=RIGHT)
 
-        self.btn_ok = ttk.Button(self, text='Добавить', command=lambda: self.get_arguments())
-        self.btn_ok.place(x=220, y=170)
+        self.btn_ok = ttk.Button(button_bar, text='Добавить', command=lambda: self.get_arguments())
+        self.btn_ok.pack(side=RIGHT)
 
         self.grab_set()
         self.focus_set()
@@ -236,25 +356,42 @@ class AddStudentForm(tk.Toplevel):
 class LessonInformationForm(tk.Toplevel):
     def __init__(self):
         super().__init__(root)
-        self.init_lesson_information_form()
+        corps_list = init_corps_list()
+        self.init_lesson_information_form(corps_list)
 
-    def init_lesson_information_form(self):
+    def get_update_auditory(self, event):
+        result = []
+
+        engine = create_engine(connection_string)
+
+        get_auditory_query = "SELECT a.name FROM auditory a " \
+                                 'JOIN corps c ON a."corpsId" = c.id ' \
+                                 "WHERE c.name = '{0}'".format(self.combobox_corps.get())
+
+        data = engine.execute(get_auditory_query)
+
+        for item in data:
+            result.append(str(item[0]))
+
+        self.combobox_auditory['values'] = result
+
+    def init_lesson_information_form(self, corps_list):
         self.title("Информация о занятии")
-        self.geometry("400x220+400+300")
+        self.geometry("400x180+400+300")
         self.resizable(False, False)
 
         label_corps = tk.Label(self, text='Выберете корпус:')
         label_corps.place(x=50, y=50)
 
-        self.combobox_corps = ttk.Combobox(self, values=[u'Учебный корпус № 10', u'Учебный корпус № 19'])  # Добавить заполнение вариантов из БД
-        self.combobox_corps.current(0)
+        self.combobox_corps = ttk.Combobox(self, values=corps_list)
+        self.combobox_corps.bind('<<ComboboxSelected>>', self.get_update_auditory)
         self.combobox_corps.place(x=200, y=50)
 
-        label_auditory = tk.Label(self, text='Введите аудиторию:')
+        label_auditory = tk.Label(self, text='Выберете аудиторию:')
         label_auditory.place(x=50, y=80)
 
-        self.entry_auditory = ttk.Entry(self)
-        self.entry_auditory.place(x=200, y=80)
+        self.combobox_auditory = ttk.Combobox(self)
+        self.combobox_auditory.place(x=200, y=80)
 
         self.btn_start_recognition = ttk.Button(self, text='Начать', command=self.get_lesson_information)
         self.btn_start_recognition.place(x=150, y=120)
@@ -264,7 +401,7 @@ class LessonInformationForm(tk.Toplevel):
 
     def get_lesson_information(self):
         corps = str(self.combobox_corps.get())
-        auditory = str(self.entry_auditory.get())
+        auditory = str(self.combobox_auditory.get())
         lesson_data = pl(corps, auditory)
         self.get_students_from_groups(lesson_data)
 

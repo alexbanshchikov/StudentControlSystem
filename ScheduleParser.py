@@ -27,6 +27,7 @@ def parse_2(aud, URL):
         print('Введенные корпус/аудитория некорректны')
         return 0
 
+
 def parse_3(URL):
     session = requests.Session()
     try:
@@ -43,10 +44,14 @@ def parse_3(URL):
     except BaseException as e:
         print("Query error: {}".format(e))
 
+
 def parse_lesson(corps, auditory):
-    #result = parse_3(parse_2('206', parse_1('Учебный корпус № 10')))
-    #result.append(corps)
-    #result.append(auditory)
-    #return tuple(result)
-    #return ('Инстр.средства ИС (ЛК)', '8И5А', 'Цапко И. В.', 'Учебный корпус № 10', '206')
-    return ('Инстр.средства ИС (ЛК)', ('8И5А', '1263'), 'Цапко И. В.', 'Учебный корпус № 10', '206')
+    '''result = parse_3(parse_2(auditory, parse_1(corps)))
+    result[1] = tuple(str(item) for item in result[1].split(', '))
+    result.append(corps)
+    result.append(auditory)
+    return tuple(result)'''
+
+
+    return ('Инстр.средства ИС (ЛК)', '8И5А', 'Цапко И. В.', 'Учебный корпус № 10', '206')
+    # return ('Инстр.средства ИС (ЛК)', ('8И5А', '1263'), 'Цапко И. В.', 'Учебный корпус № 10', '206')

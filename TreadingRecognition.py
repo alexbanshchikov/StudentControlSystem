@@ -86,15 +86,13 @@ class GuiApp(object):
 
     def close_program(self, lesson_data):
         engine = create_engine(connection_string)
-        cap.release()
-        cv2.destroyAllWindows()
         students_list = []
         [students_list.append(self.tree.item(child, "values")) for child in self.tree.get_children()]
         for item in students_list:
             insert_query = 'INSERT INTO "recognitionHistory" ("date", "corpse", "auditory", "lessonName", ' \
                            '"studentName", "timeIn", "timeOut", "teacherName", "studyGroup") ' \
                             "VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}')"\
-                                                            .format(datetime.strftime(datetime.now(), '%Y-%d-%m'),
+                                                            .format(datetime.strftime(datetime.now(), '%Y-%m-%d'),
                                                                     lesson_data[3],
                                                                     lesson_data[4],
                                                                     lesson_data[0],
@@ -107,6 +105,8 @@ class GuiApp(object):
             engine.execute(insert_query)
 
         self.root.destroy()
+        cap.release()
+        cv2.destroyAllWindows()
 
 
 def get_report(array, time_list_report):
@@ -168,5 +168,3 @@ def recognition(q):
             if len(time_list_buffer) != 0:
                 get_report(time_list_buffer, time_list_report)
                 q.put(time_list_report)
-
-        # cv2.imshow('video', img2) Показать видеопоток

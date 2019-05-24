@@ -155,7 +155,7 @@ class ReportForm(tk.Toplevel):
                             """WHERE "lessonName" LIKE '{0}%%' """ \
                             """AND "studyGroup" LIKE '{1}' """ \
                             """AND (date, date) OVERLAPS ('{2}'::DATE, '{3}'::DATE) """ \
-                            'ORDER BY "studentName" ASC'.format(lesson_name, group, date_from, date_to)
+                            'ORDER BY "date" ASC'.format(lesson_name, group, date_from, date_to)
 
         data = engine.execute(get_report_query)
 

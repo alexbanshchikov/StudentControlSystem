@@ -17,6 +17,7 @@ connection_string = "postgresql+psycopg2://admin:password@localhost/student_cont
 faceCascade = cv2.CascadeClassifier('RecognitionFiles/haarcascade_frontalface_default.xml')
 
 cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture('rtsp://admin:admin@192.168.0.102:554/11')
 cap.set(3, 640)
 cap.set(4, 480)
 
